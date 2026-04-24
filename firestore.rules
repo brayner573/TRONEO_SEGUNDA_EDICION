@@ -1,0 +1,51 @@
+// =====================================================================
+// firestore.rules — Con soporte para Firebase Auth
+// Pega esto en Firebase Console → Firestore → Reglas → Publicar
+// =====================================================================
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    match /equipos/{docId} {
+
+      // Cualquiera puede leer los equipos (lista pública)
+      allow read: if true;
+
+      // Solo usuarios autenticados pueden crear equipos
+      // y el UID del documento debe coincidir con el del usuario
+      allow create: if
+        request.auth != null &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.teamName is string &&
+        request.resource.data.teamName.size() >= 2 &&
+        request.resource.data.captain is string &&
+        request.resource.data.players is list &&
+        request.resource.data.players.size() == 5;
+
+      // Nadie puede editar ni borrar equipos desde el cliente
+      allow update, delete: if false;
+    }
+
+    // Colección de usuarios (si la necesitas en el futuro)
+    match /users/{userId} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+
+
+// ── PASOS PARA APLICAR ESTAS REGLAS ──────────────────────────────────────
+// 1. Ve a https://console.firebase.google.com/
+// 2. Selecciona el proyecto "torneo-de-dotita"
+// 3. Firestore Database → pestaña "Reglas"
+// 4. Borra todo lo que hay y pega solo el bloque rules_version... hasta }
+//    (sin estas líneas de comentario // ──)
+// 5. Clic en "Publicar"
+//
+// ── ACTIVAR FIREBASE AUTH ─────────────────────────────────────────────────
+// 1. Firebase Console → Authentication → Comenzar
+// 2. Pestaña "Sign-in method" → "Correo electrónico/contraseña" → Habilitar
+// 3. Guardar
+// =========================================================================
